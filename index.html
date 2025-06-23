@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Humanity Airdrop Checker (On-Chain)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 40px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            padding: 12px 25px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fafafa;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start; /* Align text to start */
+            text-align: left; /* Align text to left */
+        }
+        #result p {
+            margin: 5px 0;
+            font-size: 1em;
+            text-align: left; /* Ensure text inside result also aligns left */
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Humanity Airdrop Checker</h1>
+        <p>Masukkan alamat wallet Anda untuk memeriksa status klaim airdrop Humanity Protocol (dari blockchain).</p>
+
+        <div class="input-group">
+            <input type="text" id="walletInput" placeholder="Contoh: 0xAbc123..." onkeypress="handleKeyPress(event)">
+            <button onclick="checkAirdrop()">Cek Airdrop</button>
+        </div>
+
+        <div id="result">
+            <p>Status: <span id="status" class="info">Siap</span></p>
+            <p>Detail: <span id="details" class="info">Masukkan alamat wallet Anda di atas untuk melihat status klaim.</span></p>
+        </div>
+    </div>
+
+    <script>
+        // URL server backend Anda
+        const BACKEND_URL = 'http://127.0.0.1:5000'; // Flask defaultnya 127.0.0.1:5000
+
+        async function checkAirdrop() {
+            const walletAddress = document.getElementById('walletInput').value.trim();
+            const statusSpan = document.getElementById('status');
+            const detailsSpan = document.getElementById('details');
+
+            statusSpan.textContent = 'Memeriksa...';
+            detailsSpan.textContent = 'Mohon tunggu...';
+            statusSpan.className = 'info';
+            detailsSpan.className = 'info';
+
+            if (!walletAddress) {
+                statusSpan.textContent = 'Error';
+                detailsSpan.textContent = 'Alamat wallet tidak boleh kosong!';
+                statusSpan.className = 'error';
+                return;
+            }
+
+            // Basic wallet address validation (can be more robust)
+            if (!walletAddress.startsWith('0x') || walletAddress.length !== 42) {
+                statusSpan.textContent = 'Error';
+                detailsSpan.textContent = 'Format alamat wallet tidak valid (harus dimulai dengan 0x dan 42 karakter).';
+                statusSpan.className = 'error';
+                return;
+            }
+
+            try {
+                const response = await fetch(`<span class="math-inline">\{BACKEND\_URL\}/check\-airdrop?wallet\=</span>{walletAddress}`);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                    statusSpan.textContent = 'Error';
+                    detailsSpan.textContent = `Gagal memeriksa: ${errorData.error || response.statusText}.`;
+                    statusSpan.className = 'error';
+                    return;
+                }
+
+                const data = await response.json();
+                statusSpan.textContent = 'Berhasil';
+                statusSpan.className = 'success';
+
+                let detailsHtml = `
+                    <p><strong>Alamat Wallet:</strong> ${data.walletAddress}</p>
+                    <p><strong>Epoch Saat Ini:</strong> ${data.currentEpoch}</p>
+                    <p><strong>Jumlah Buffer:</strong> ${data.bufferedAmountRWT} RWT</p>
+                    <p><strong>Sudah Klaim Epoch Ini:</strong> ${data.claimedForCurrentEpoch ? '✅ Sudah' : '❌ Belum'}</p>
+                    <p><strong>Sudah Klaim Genesis:</strong> ${data.genesisClaimed ? '✅ Sudah' : '❌ Belum'}</p>
+                `;
+                detailsSpan.innerHTML = detailsHtml;
+
+            } catch (error) {
+                statusSpan.textContent = 'Error';
+                detailsSpan.textContent = `Terjadi kesalahan koneksi ke server backend: ${error.message}`;
+                statusSpan.className = 'error';
+                console.error('Frontend Fetch error:', error);
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                checkAirdrop();
+            }
+        }
+    </script>
+</body>
+</html>
