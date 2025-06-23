@@ -138,7 +138,7 @@
             }
 
             // Validasi format alamat wallet dasar di frontend
-            // Ini membantu memberikan feedback cepat sebelum mengirim ke backend
+            // Ini membantu memberikan feedback cepat sebelum mengirim permintaan ke backend
             if (!walletAddress.startsWith('0x') || walletAddress.length !== 42) {
                 statusSpan.textContent = 'Error';
                 detailsSpan.textContent = 'Format alamat wallet tidak valid (harus dimulai dengan 0x dan 42 karakter).';
@@ -148,9 +148,10 @@
 
             // --- BAGIAN KRITIS: Membangun URL permintaan dengan benar ---
             // Gunakan backticks (`) untuk template literal dan ${variabel} untuk interpolasi.
+            // Contoh URL yang benar: http://127.0.0.1:5000/check-airdrop?wallet=0x123abc...
             const requestUrl = `${BACKEND_URL}/check-airdrop?wallet=${walletAddress}`;
             
-            // Log URL ke konsol browser untuk debugging
+            // Log URL ke konsol browser untuk tujuan debugging
             console.log("Mencoba fetch dari URL:", requestUrl); 
 
             try {
@@ -172,6 +173,7 @@
                 statusSpan.className = 'success';
 
                 // Tampilkan detail hasil klaim airdrop
+                // Data diambil dari objek 'data' yang diterima dari backend
                 let detailsHtml = `
                     <p><strong>Alamat Wallet:</strong> ${data.walletAddress}</p>
                     <p><strong>Epoch Saat Ini:</strong> ${data.currentEpoch}</p>
@@ -182,7 +184,7 @@
                 detailsSpan.innerHTML = detailsHtml;
 
             } catch (error) {
-                // Tangani error yang terjadi selama proses fetch (misalnya, server backend tidak berjalan)
+                // Tangani error yang terjadi selama proses fetch (misalnya, server backend tidak berjalan, masalah jaringan)
                 statusSpan.textContent = 'Error';
                 detailsSpan.textContent = `Terjadi kesalahan koneksi ke server backend: ${error.message}`;
                 statusSpan.className = 'error';
@@ -190,7 +192,7 @@
             }
         }
 
-        // Fungsi untuk memungkinkan pengguna menekan Enter untuk memicu pengecekan
+        // Fungsi untuk memungkinkan pengguna menekan tombol Enter untuk memicu pengecekan
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
                 checkAirdrop();
