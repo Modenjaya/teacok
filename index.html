@@ -61,11 +61,11 @@
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
         button:hover {
-            background-color: #0056b3;
-            transform: translateY(-1px);
+                background-color: #0056b3;
+                transform: translateY(-1px);
         }
         button:active {
-            transform: translateY(0);
+                transform: translateY(0);
         }
         #result {
             margin-top: 25px;
@@ -116,7 +116,9 @@
 
     <script>
         // URL server backend Anda
-        const BACKEND_URL = 'http://127.0.0.1:5000'; // Flask defaultnya 127.0.0.1:5000
+        // Jika Anda menjalankan app.py secara lokal, ini harus 'http://127.0.0.1:5000'
+        // Jika Anda me-deploy backend Anda ke Vercel atau layanan lain, gunakan URL publiknya di sini.
+        const BACKEND_URL = 'http://127.0.0.1:5000'; 
 
         async function checkAirdrop() {
             const walletAddress = document.getElementById('walletInput').value.trim();
@@ -135,7 +137,8 @@
                 return;
             }
 
-            // Basic wallet address validation (can be more robust)
+            // Validasi format alamat wallet dasar di frontend
+            // Ini membantu memberikan feedback cepat sebelum mengirim ke backend
             if (!walletAddress.startsWith('0x') || walletAddress.length !== 42) {
                 statusSpan.textContent = 'Error';
                 detailsSpan.textContent = 'Format alamat wallet tidak valid (harus dimulai dengan 0x dan 42 karakter).';
@@ -143,21 +146,32 @@
                 return;
             }
 
-            try {
-                const response = await fetch(`<span class="math-inline">\{BACKEND\_URL\}/check\-airdrop?wallet\=</span>{walletAddress}`);
+            // --- BAGIAN KRITIS: Membangun URL permintaan dengan benar ---
+            // Gunakan backticks (`) untuk template literal dan ${variabel} untuk interpolasi.
+            const requestUrl = `${BACKEND_URL}/check-airdrop?wallet=${walletAddress}`;
+            
+            // Log URL ke konsol browser untuk debugging
+            console.log("Mencoba fetch dari URL:", requestUrl); 
 
+            try {
+                const response = await fetch(requestUrl);
+
+                // Periksa apakah respons dari backend berhasil (status code 2xx)
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({ message: response.statusText }));
                     statusSpan.textContent = 'Error';
+                    // Tampilkan pesan error dari backend (jika ada) atau status HTTP
                     detailsSpan.textContent = `Gagal memeriksa: ${errorData.error || response.statusText}.`;
                     statusSpan.className = 'error';
                     return;
                 }
 
+                // Parse respons JSON dari backend
                 const data = await response.json();
                 statusSpan.textContent = 'Berhasil';
                 statusSpan.className = 'success';
 
+                // Tampilkan detail hasil klaim airdrop
                 let detailsHtml = `
                     <p><strong>Alamat Wallet:</strong> ${data.walletAddress}</p>
                     <p><strong>Epoch Saat Ini:</strong> ${data.currentEpoch}</p>
@@ -168,6 +182,7 @@
                 detailsSpan.innerHTML = detailsHtml;
 
             } catch (error) {
+                // Tangani error yang terjadi selama proses fetch (misalnya, server backend tidak berjalan)
                 statusSpan.textContent = 'Error';
                 detailsSpan.textContent = `Terjadi kesalahan koneksi ke server backend: ${error.message}`;
                 statusSpan.className = 'error';
@@ -175,6 +190,7 @@
             }
         }
 
+        // Fungsi untuk memungkinkan pengguna menekan Enter untuk memicu pengecekan
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
                 checkAirdrop();
